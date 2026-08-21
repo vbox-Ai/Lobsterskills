@@ -1,0 +1,38 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # 每3天 UTC 00:00 自动运行（1,4,7,10,13,16,19,22,25,28日）
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/OpenMinis/MinisSkills.git
+          git fetch upstream main
+
+      - name: Merge upstream into main
+        run: |
+          git merge upstream/main --allow-unrelated-histories -X theirs -m "chore: auto-sync from OpenMinis/MinisSkills"
+
+      - name: Push to target repo
+        run: |
+          git push origin main
